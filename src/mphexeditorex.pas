@@ -1,7 +1,4 @@
-{$DEFINE USESTDACTIONS} // compile the editor with standard actions support (delphi6 and up)
-
 (*
-
   TMPHexEditorEx v 09-30-2007<br>
 
   @author((C) markus stephany, vcl[at]mirkes[dot]de, all rights reserved.)
@@ -45,7 +42,7 @@
 
   - Al for bug reports<br><br>
 
-  - Dieter Köhler for reporting the delphi vcl related CanFocus bug<br><br>
+  - Dieter KÃ¶hler for reporting the delphi vcl related CanFocus bug<br><br>
 
   - Piotr Likus for reporting a cardinal&lt;-&gt;integer related bug in the Undo method<br><br>
 
@@ -57,7 +54,7 @@
 
   - Heybirder for reporting that delphi 6 has not TStringList.ValueFromIndex property<br><br>
 
-  - Magnus Flysjö for his Delphi2006 package and the updated MPDELVER.INC file<br><br>
+  - Magnus FlysjÃ¶ for his Delphi2006 package and the updated MPDELVER.INC file<br><br>
 
 
   <h3>history:</h3>
@@ -175,26 +172,45 @@
   <li>v 08-18-2002: august 18, 2002<br><br>
          - first release</li>
   </ul></p>
-
 *)
 
 
 unit MPHexEditorEx;
 
-{.$I MPDELVER.INC}
-{$MODE DELPHI}
-{$IFDEF WINDOWS}
-  {$DEFINE MPH_WIN}
-{$ENDIF}
-
 interface
+
+{$DEFINE USESTDACTIONS} // compile the editor with standard actions support (delphi6 and up)
+
+{.$I MPDELVER.INC}
+{$IFDEF FPC}
+  {$MODE DELPHI}
+
+  {$IFDEF WINDOWS}
+    {$DEFINE MPH_WIN}
+  {$ENDIF}
+{$ELSE}
+  {$IFDEF MSWINDOWS}
+    {$DEFINE MPH_WIN}
+  {$ENDIF}
+
+  {$WARN UNSAFE_CODE OFF}
+  {$WARN UNSAFE_TYPE OFF}
+  {$WARN UNSAFE_CAST OFF}
+
+  {$IF CompilerVersion >= 22}
+    {$LEGACYIFEND ON}
+    {$WARN IMPLICIT_STRING_CAST OFF}
+    {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
+  {$IFEND}
+{$ENDIF}
 
 uses
   {$IFDEF MPH_WIN}Windows, Messages,{$ENDIF}
-  SysUtils, Classes, Controls, Forms, MPHexEditor, Graphics, Printers, LMessages, FileUtil,
+  {$IFDEF FPC}LMessages, LCLIntf, LCLType, FileUtil,{$ENDIF}
+  SysUtils, Classes, Controls, Forms, MPHexEditor, Graphics, Printers,
   {$IFDEF USESTDACTIONS}StdActns, Clipbrd,{$ENDIF}
   {$IFDEF MPH_WIN}ShlObj, ActiveX,{$ENDIF}
-  Menus, LCLIntf, LCLType, types;
+  Menus, types;
 
 type
   //@exclude
@@ -281,7 +297,11 @@ type
       const Formats: array of TClipFormat; var Format: TClipFormat): boolean;
     function GetMyOLEFormats: TClipFormats;
     {$ENDIF}
+    {$IFDEF FPC}
     procedure WMDestroy(var Message: TLMDestroy); message LM_DESTROY;
+    {$ELSE}
+    procedure WMDestroy(var Message: TWMDestroy); message WM_DESTROY;
+    {$ENDIF FPC}
     procedure SetPrintOptions(const Value: TMPHPrintOptions);
 
     function PrintToCanvas(ACanvas: TCanvas; const APage: integer;
@@ -335,15 +355,15 @@ type
     {$IFDEF MPH_WIN}
     // @exclude(supported dnd/clipboard data available?)
     function SupportsOLEData(const dataObj: IDataObject; const grfKeyState:
-      longword; const pt: TPoint; var dwEffect: longword; const Operation:
+      {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const Operation:
       TMPHOLEOperation): HRESULT;
     // @exclude(insert ole-dropped data)
     function InsertOLEData(const dataObj: IDataObject; const grfKeyState:
-      longword; const pt: TPoint; var dwEffect: longword; const Operation:
+      {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const Operation:
       TMPHOLEOperation): HRESULT;
     // @exclude(modify drageffect depending on key states and data format)
-    function ModifyOLEDropEffect(const grfKeyState: longword; const pt: TPoint;
-      var dwEffect: longword): HRESULT;
+    function ModifyOLEDropEffect(const grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const pt: TPoint;
+      var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HRESULT;
     {$ENDIF}
     // @exclude(paint handler)
     procedure Paint; override;
@@ -647,6 +667,8 @@ type
     property FindProgress;
     // see inherited @inherited
     property RulerNumberBase;
+    property Offset;
+    property OnCellSelect;
   end;
 
   {$IFDEF MPH_WIN}
@@ -663,13 +685,13 @@ type
   public
     constructor Create(Editor: TMPHexEditorEx);
     procedure BeforeDestruction; override;
-    function DragEnter(const dataObj: IDataObject; grfKeyState: longword; pt:
-      TPoint; var dwEffect: longword): HResult; stdcall;
-    function DragOver(grfKeyState: longword; pt: TPoint; var dwEffect: longword):
+    function DragEnter(const dataObj: IDataObject; grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; pt:
+      TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
+    function DragOver(grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}):
       HResult; stdcall;
     function DragLeave: HResult; stdcall;
-    function Drop(const dataObj: IDataObject; grfKeyState: longword; pt: TPoint;
-      var dwEffect: longword): HResult; stdcall;
+    function Drop(const dataObj: IDataObject; grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; pt: TPoint;
+      var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
     property Active: boolean read FActive write SetActive;
   end;
   {$ENDIF}
@@ -735,7 +757,11 @@ const
 implementation
 
 uses
+  {$IFDEF FPC}
   LazFileUtils,
+  {$ELSE}
+  {$IF CompilerVersion >= 22}UITypes,{$IFEND}
+  {$ENDIF FPC}
   StdCtrls, {$IFDEF MPH_WIN}ShellAPI, ComObj,{$ENDIF} TypInfo;
 
 resourcestring
@@ -852,9 +878,8 @@ type
     FIndex: integer;
   public
     constructor Create;
-    function Next(celt: longword; out elt: tagFORMATETC; pceltFetched: PULong): HResult;
-      stdcall;
-    function Skip(celt: longword): HResult; stdcall;
+    function Next(celt: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; out elt{$IFDEF FPC}: tagFORMATETC{$ENDIF}; pceltFetched: {$IFDEF FPC}PULong{$ELSE}PLongInt{$ENDIF}): HResult; stdcall;
+    function Skip(celt: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
     function Reset: HResult; stdcall;
     function Clone(out Enum: IEnumFormatEtc): HResult; stdcall;
   end;
@@ -865,9 +890,9 @@ type
 
   TMPHDropSource = class(TInterfacedObject, IDropSource)
   public
-    function QueryContinueDrag(fEscapePressed: LongBOOL; grfKeyState: longword):
+    function QueryContinueDrag(fEscapePressed: {$IFDEF FPC}LongBool{$ELSE}Bool{$ENDIF}; grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}):
       HResult; stdcall;
-    function GiveFeedback(dwEffect: longword): HResult; stdcall;
+    function GiveFeedback(dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
   end;
 
   // ole data container
@@ -897,13 +922,17 @@ type
     function GetCanonicalFormatEtc(const formatetc: TFormatEtc; out
       formatetcOut: TFormatEtc): HResult; stdcall;
     Function SetData(Const formatetc : FORMATETC;
-      {$IF FPC_FullVersion >= 30200}var{$ELSE}const{$IFEND} medium:STGMEDIUM;
+      {$IFDEF FPC}
+      {$IF Defined( FPC ) AND ( FPC_FullVersion >= 30200 )}var{$ELSE}const{$IFEND} medium:STGMEDIUM;
+      {$ELSE}
+      var medium:STGMEDIUM;
+      {$ENDIF FPC}
       FRelease : BOOL):HRESULT; StdCall;
-    function EnumFormatEtc(dwDirection: longword; out enumFormatEtc:
+    function EnumFormatEtc(dwDirection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; out enumFormatEtc:
       IEnumFormatEtc): HResult; stdcall;
-    function DAdvise(const formatetc: TagFormatEtc; advf: longword; const advSink:
-      IAdviseSink; out dwConnection: longword): HResult; stdcall;
-    function DUnadvise(dwConnection: longword): HResult; stdcall;
+    function DAdvise(const formatetc: TagFormatEtc; advf: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const advSink:
+      IAdviseSink; out dwConnection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
+    function DUnadvise(dwConnection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
     function EnumDAdvise(out enumAdvise: IEnumStatData): HResult; stdcall;
   end;
 {$ENDIF}
@@ -1113,6 +1142,14 @@ var
   LStrFormatName: string;
   LszBuffer: array[0..511] of char;
 begin
+  {$IFNDEF FPC}
+  {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+    {$IFOPT R+}
+      {$DEFINE RANGECHECK_REENABLE}
+      {$RANGECHECKS OFF} // {$R-}
+    {$ENDIF}
+  {$IFEND CompilerVersion <= 20} 
+  {$ENDIF}
   Result := False;
 
   // create and show a dialog for clipboard format selection
@@ -1230,6 +1267,14 @@ begin
   finally
     Free;
   end;
+  {$IFNDEF FPC}
+  {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+    {$IFDEF RANGECHECK_REENABLE}
+      {$RANGECHECKS ON} // {$R+}
+      {$UNDEF RANGECHECK_REENABLE}
+    {$ENDIF}
+  {$IFEND CompilerVersion <= 20} 
+  {$ENDIF}
 end;
 
 // query a data object's supported formats and check if we can "paste" them
@@ -1346,7 +1391,7 @@ function TMPHexEditorEx.CanPaste: boolean;
 {$IFDEF MPH_WIN}
 var
   LifData: IDataObject;
-  LIntEffect: longword;
+  LIntEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
   {$ENDIF}
 begin
   {$IFDEF MPH_WIN}
@@ -1410,7 +1455,7 @@ function TMPHexEditorEx.CBPaste: boolean;
 {$IFDEF MPH_WIN}
 var
   LifData: IDataObject;
-  LIntEffect: longword;
+  LIntEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
 {$ENDIF}
 begin
   {$IFDEF MPH_WIN}
@@ -1556,11 +1601,11 @@ begin
     LStrBackup := FileName + FBackupFileExt;
     if FileExists(LStrBackup) and not DeleteFile(LStrBackup) then
       raise EMPHexEditor.CreateFmt(ERR_BACKUP_DELETE,
-        [LStrBackup, SysErrorMessage(GetLastOSError)]);
+        [LStrBackup, SysErrorMessage({$IFDEF FPC}GetLastOSError{$ELSE}GetLastError{$ENDIF})]);
 
-    if not RenameFileUTF8(FileName, LStrBackup) then
+    if not {$IFDEF FPC}RenameFileUTF8{$ELSE}RenameFile{$ENDIF}(FileName, LStrBackup) then
       raise EMPHexEditor.CreateFmt(ERR_BACKUP_CREATE,
-        [LStrBackup, SysErrorMessage(GetLastOSError)]);
+        [LStrBackup, SysErrorMessage({$IFDEF FPC}GetLastOSError{$ELSE}GetLastError{$ENDIF})]);
   end;
 end;
 
@@ -1599,7 +1644,6 @@ var
   LobjData: TMPHDataObject;
 {$ENDIF}
 begin
-
   inherited;
   {$IFDEF MPH_WIN}
   if FOleDragDrop and (ssLeft in Shift) and (not FOleDragging) and FOleStartDrag
@@ -1616,10 +1660,10 @@ begin
         SwapNibbles);
       if not ReadOnlyView then
         LHrsOperation := DoDragDrop(LobjData, TMPHDropSource.Create,
-          DROPEFFECT_COPY or DROPEFFECT_MOVE, @LIntEffect)
+          DROPEFFECT_COPY or DROPEFFECT_MOVE, {$IFDEF FPC}@LIntEffect{$ELSE}LIntEffect{$ENDIF} )
       else
         LHrsOperation := DoDragDrop(LobjData, TMPHDropSource.Create,
-          DROPEFFECT_COPY, @LIntEffect);
+          DROPEFFECT_COPY, {$IFDEF FPC}@LIntEffect{$ELSE}LIntEffect{$ENDIF} );
       // if feedback has given via idataobject.setdata
       if LObjData.FHasDropEffect then
         LIntEffect := LObjData.FDropEffect;
@@ -1646,9 +1690,7 @@ begin
   {$ENDIF}
 end;
 
-
 // cancel dragging and flags
-
 procedure TMPHexEditorEx.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y:
   integer);
 begin
@@ -1696,7 +1738,7 @@ end;
 // insert idataobject data
 {$IFDEF MPH_WIN}
 function TMPHexEditorEx.InsertOLEData(const dataObj: IDataObject;
-  const grfKeyState: longword; const pt: TPoint; var dwEffect: longword;
+  const grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
   const Operation: TMPHOLEOperation): HRESULT;
 var
   LRecStg: TStgMedium;
@@ -1876,7 +1918,7 @@ end;
 // do we support one of the provided idataobject formats?
 
 function TMPHexEditorEx.SupportsOLEData(const dataObj: IDataObject;
-  const grfKeyState: longword; const pt: TPoint; var dwEffect: longword;
+  const grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; const pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
   const Operation: TMPHOLEOperation): HRESULT;
 begin
   Result := S_FALSE;
@@ -1912,8 +1954,8 @@ end;
 
 // modify effect (move/copy/link) depending on key state and data format
 
-function TMPHexEditorEx.ModifyOLEDropEffect(const grfKeyState: longword;
-  const pt: TPoint; var dwEffect: longword): HRESULT;
+function TMPHexEditorEx.ModifyOLEDropEffect(const grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
+  const pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HRESULT;
 begin
   Result := S_OK;
   if FOleDragging then
@@ -1973,7 +2015,11 @@ end;
 {$ENDIF}
 // reset droptarget helper interface on window destruction
 
+{$IFDEF FPC}
 procedure TMPHexEditorEx.WMDestroy(var Message: TLMDestroy);
+{$ELSE}
+procedure TMPHexEditorEx.WMDestroy(var Message: TWMDestroy);
+{$ENDIF FPC}
 begin
   inherited;
   {$IFDEF MPH_WIN}
@@ -2056,11 +2102,14 @@ begin
         Font.Assign(self.Font)
       else
         Font.Assign(self.FPrintFont);
-      //SetMapMode(Handle, MM_ANISOTROPIC);
-      //SetWindowExtEx(Handle, LIntWidth, LIntHeight, nil);
-      //SetViewPortExtEx(Handle, LIntWidth, LIntHeight, nil);
-      Font.Size := Round(Font.Size * Printer.YDPI /
-        Screen.PixelsPerInch);
+      {$IFNDEF FPC}
+      SetMapMode(Handle, MM_ANISOTROPIC);
+      SetWindowExtEx(Handle, LIntWidth, LIntHeight, nil);
+      SetViewPortExtEx(Handle, LIntWidth, LIntHeight, nil);
+      Font.Size := Round(Font.Size * GetDeviceCaps(Printer.Handle, LOGPIXELSY) / Screen.PixelsPerInch);
+      {$ELSE}
+      Font.Size := Round(Font.Size * Printer.YDPI / Screen.PixelsPerInch);
+      {$ENDIF}
       Brush.Style := bsSolid;
       Brush.Color := clWhite;
       FillRect(Rect(0, 0, LIntWidth, LIntHeight));
@@ -2096,10 +2145,13 @@ var
   LIntLogX, LIntLogY, LIntPhysWidth, LIntPhysHeight: integer;
 begin
   Result := FPrintOptions.FMargins;
-  LIntLogX := Printer.XDPI;
-  // pixels per inch in x dir
-  LIntLogY := Printer.YDPI;
-  // pixels per inch in Y dir
+  {$IFDEF FPC}
+  LIntLogX := Printer.XDPI; // pixels per inch in x dir
+  LIntLogY := Printer.YDPI; // pixels per inch in Y dir
+  {$ELSE}
+  LIntLogX := GetDeviceCaps(Printer.Handle, LOGPIXELSX); // pixels per inch in x dir
+  LIntLogY := GetDeviceCaps(Printer.Handle, LOGPIXELSY); // pixels per inch in Y dir
+  {$ENDIF}
   LIntPhysWidth := Printer.PageWidth;
   LIntPhysHeight := Printer.PageHeight;
   Result.Left := Round(Result.Left / 25.4 * LIntLogX);
@@ -2583,7 +2635,7 @@ var
   LIntPos: Integer;
 begin
   // get the position where the mouse is
-  LCLIntf.GetCursorPos(LptMouse);
+  {$IFDEF FPC}LCLIntf{$ELSE}Windows{$ENDIF}.GetCursorPos(LptMouse);
   LptMouse := ScreenToClient(LptMouse);
   with CheckMouseCoord(LptMouse.X, LptMouse.Y) do
     LIntPos := GetPosAtCursor(X, Y);
@@ -2706,7 +2758,7 @@ end;
 // do we support data format? if yes, set desired drop effect
 
 function TMPHDropTarget.DragEnter(const dataObj: IDataObject;
-  grfKeyState: longword; pt: TPoint; var dwEffect: longword): HResult; stdcall;
+  grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   Result := FEditor.SupportsOLEData(dataObj, grfKeyState, pt, dwEffect,
     oleDrop);
@@ -2733,8 +2785,8 @@ end;
 
 // dragging over window
 
-function TMPHDropTarget.DragOver(grfKeyState: longword; pt: TPoint;
-  var dwEffect: longword): HResult; stdcall;
+function TMPHDropTarget.DragOver(grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; pt: TPoint;
+  var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   Result := FEditor.ModifyOLEDropEffect(grfKeyState, pt, dwEffect);
   if Result = S_OK then
@@ -2751,8 +2803,8 @@ end;
 
 // dropped!
 
-function TMPHDropTarget.Drop(const dataObj: IDataObject; grfKeyState: longword;
-  pt: TPoint; var dwEffect: longword): HResult; stdcall;
+function TMPHDropTarget.Drop(const dataObj: IDataObject; grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
+  pt: TPoint; var dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   try
     Result := FEditor.SupportsOLEData(dataObj, grfKeyState, pt, dwEffect,
@@ -2919,8 +2971,8 @@ end;
 
 // iterate over all format records
 
-function TMPHEnumFormatETC.Next(celt: longword; out elt: tagFORMATETC;
-  pceltFetched: PULong): HResult; stdcall;
+function TMPHEnumFormatETC.Next(celt: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; out elt{$IFDEF FPC}: tagFORMATETC{$ENDIF};
+  pceltFetched: {$IFDEF FPC}PULong{$ELSE}PLongInt{$ENDIF}): HResult; stdcall;
 var
   LIntLoop: integer;
   LRecOut: packed array[0..MY_SUPPORTED_FORMATS - 1] of TFormatETC absolute elt;
@@ -2952,7 +3004,7 @@ end;
 
 // skip entries
 
-function TMPHEnumFormatETC.Skip(celt: longword): HResult; stdcall;
+function TMPHEnumFormatETC.Skip(celt: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   if (celt < MY_SUPPORTED_FORMATS - FIndex) then
   begin
@@ -2967,7 +3019,7 @@ end;
 
 // use default ole dnd cursors
 
-function TMPHDropSource.GiveFeedback(dwEffect: longword): HResult; stdcall;
+function TMPHDropSource.GiveFeedback(dwEffect: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   case dwEffect and 7 of
     DROPEFFECT_NONE,
@@ -2981,7 +3033,7 @@ end;
 // standard behaviour
 
 function TMPHDropSource.QueryContinueDrag(fEscapePressed: LongBOOL;
-  grfKeyState: longword): HResult; stdcall;
+  grfKeyState: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   if fEscapePressed then
     Result := DRAGDROP_S_CANCEL
@@ -3047,13 +3099,13 @@ end;
 
 // advise not supported
 
-function TMPHDataObject.DAdvise(const formatetc: TagFormatEtc; advf: longword;
-  const advSink: IAdviseSink; out dwConnection: longword): HResult; stdcall;
+function TMPHDataObject.DAdvise(const formatetc: TagFormatEtc; advf: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF};
+  const advSink: IAdviseSink; out dwConnection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   Result := OLE_E_ADVISENOTSUPPORTED;
 end;
 
-function TMPHDataObject.DUnadvise(dwConnection: longword): HResult; stdcall;
+function TMPHDataObject.DUnadvise(dwConnection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}): HResult; stdcall;
 begin
   Result := OLE_E_ADVISENOTSUPPORTED;
 end;
@@ -3066,7 +3118,7 @@ end;
 
 // create a formetc enumerator, only for getdata
 
-function TMPHDataObject.EnumFormatEtc(dwDirection: longword; out
+function TMPHDataObject.EnumFormatEtc(dwDirection: {$IFDEF FPC}LongWord{$ELSE}LongInt{$ENDIF}; out
   enumFormatEtc: IEnumFormatEtc): HResult; stdcall;
 begin
   enumFormatETC := nil;
@@ -3132,10 +3184,10 @@ begin
           if formatetcIn.cfFormat = CF_TEXT then
           begin
             if FTextAsHex then
-              ConvertBinToHex(FData, PChar(LPtrLocal), FDataSize, FSwapNibbles)
+              ConvertBinToHex(FData, PAnsiChar(LPtrLocal), FDataSize, FSwapNibbles)
             else
               Move(FData^, LPtrLocal^, LIntDataSize - 1);
-            PChar(LPtrLocal)[LIntDataSize - 1] := #0;
+            PAnsiChar(LPtrLocal)[LIntDataSize - 1] := #0;
           end
           else if formatetcIn.cfFormat = CF_MPHEXEDITOR then
           begin
@@ -3216,8 +3268,13 @@ end;
 // check for dropeffect calls (dodragdrop not always return the real effect)
 
 function TMPHDataObject.SetData(const formatetc: FORMATETC;
-  {$IF FPC_FullVersion >= 30200}var{$ELSE}const{$IFEND} medium: STGMEDIUM;
-  FRelease: BOOL): HRESULT; StdCall;
+                                {$IFDEF FPC}
+//                                  {$IF FPC_FullVersion >= 30200}var{$ELSE}const{$IFEND}
+                                var
+                                {$ELSE}
+                                var
+                                {$ENDIF}medium: STGMEDIUM;
+                                FRelease: BOOL): HRESULT; StdCall;
 var
   LPtrEffect: PDWORD;
 begin
@@ -3273,8 +3330,24 @@ begin
       case S[LIntLoop] of
         'f': Result := Result + ExtractFileName(FEditor.Filename);
         'F': Result := Result + FEditor.Filename;
+        {$IFNDEF FPC}
+        {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+          {$IFOPT R+}
+            {$DEFINE RANGECHECK_REENABLE}
+            {$RANGECHECKS OFF} // {$R-}
+          {$ENDIF}
+        {$IFEND CompilerVersion <= 20} 
+        {$ENDIF}
         'p': Result := Result + IntToRadix(Page, 10);
         'P': Result := Result + IntToRadix(FPages, 10);
+        {$IFNDEF FPC}
+        {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+          {$IFDEF RANGECHECK_REENABLE}
+            {$RANGECHECKS ON} // {$R+}
+            {$UNDEF RANGECHECK_REENABLE}
+          {$ENDIF}
+        {$IFEND CompilerVersion <= 20} 
+        {$ENDIF}
         't': Result := Result + TimeToStr(now);
         'd': Result := Result + DateToStr(now);
         '>':
@@ -3371,10 +3444,26 @@ function TMPHCanvasPrinter.DrawOrCalc(const JustCalc: boolean; const Page:
         Result := '  '
       else
       begin
+        {$IFNDEF FPC}
+        {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+          {$IFOPT R+}
+            {$DEFINE RANGECHECK_REENABLE}
+            {$RANGECHECKS OFF} // {$R-}
+          {$ENDIF}
+        {$IFEND CompilerVersion <= 20} 
+        {$ENDIF}
         if FEditor.HexLowerCase then
           Result := LowerCase(IntToRadixLen(FEditor.Data[CurPosition], 16, 2))
         else
           Result := UpperCase(IntToRadixLen(FEditor.Data[CurPosition], 16, 2));
+        {$IFNDEF FPC}
+        {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+          {$IFDEF RANGECHECK_REENABLE}
+            {$RANGECHECKS ON} // {$R+}
+            {$UNDEF RANGECHECK_REENABLE}
+          {$ENDIF}
+        {$IFEND CompilerVersion <= 20} 
+        {$ENDIF}
         if FEditor.SwapNibbles and (Length(Result) = 2) then
           Result := Result[2] + Result[1];
       end;
@@ -3390,7 +3479,23 @@ function TMPHCanvasPrinter.DrawOrCalc(const JustCalc: boolean; const Page:
       lBack: TColor;
   begin
     Application.ProcessMessages;
+    {$IFNDEF FPC}
+    {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+      {$IFOPT R+}
+        {$DEFINE RANGECHECK_REENABLE}
+        {$RANGECHECKS OFF} // {$R-}
+      {$ENDIF}
+    {$IFEND CompilerVersion <= 20} 
+    {$ENDIF}
     LStrPart := FEditor.GetOffsetString(CurPosition);
+    {$IFNDEF FPC}
+    {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+      {$IFDEF RANGECHECK_REENABLE}
+        {$RANGECHECKS ON} // {$R+}
+        {$UNDEF RANGECHECK_REENABLE}
+      {$ENDIF}
+    {$IFEND CompilerVersion <= 20} 
+    {$ENDIF}
 
     if LStrPart <> '' then
     begin
@@ -3552,7 +3657,12 @@ function TMPHCanvasPrinter.DrawOrCalc(const JustCalc: boolean; const Page:
           FEditor.ReadBuffer(LWChrText, CurPosition + (LIntLoop * 2), 2);
           if FEditor.UnicodeBigEndian then
             SwapWideChar(LWChrText);
-          if (LWChrText < #256) and (Char(LWChrText) in FEditor.MaskedChars)
+          if (LWChrText < #256) and
+             {$IFDEF FPC}
+             (Char(LWChrText) in FEditor.MaskedChars)
+             {$ELSE}
+             {$IF CompilerVersion >= 20}CharInSet( Char(LWChrText) ,{$ELSE}( Char(LWChrText)  in{$IFEND} FEditor.MaskedChars )
+             {$ENDIF}
             then
             LWChrText := WideChar(FEditor.MaskChar);
           Result.Text := Result.Text + LWChrText;
@@ -3750,7 +3860,9 @@ function TMPHCanvasPrinter.DrawOrCalc(const JustCalc: boolean; const Page:
     LStrLeft, LStrCenter, LStrRight: string;
     LIntPipe, LIntOldBKMode, LIntOldAlign: integer;
     LIntRect: TRect;
+    {$IFDEF FPC}
     OldTextStyle, NewTextStyle: TTextStyle;
+    {$ENDIF}
   begin
     LStrLeft := '';
     LStrCenter := '';
@@ -3774,46 +3886,64 @@ function TMPHCanvasPrinter.DrawOrCalc(const JustCalc: boolean; const Page:
     else
       LStrLeft := StrText;
 
-    //LIntOldAlign := GetTextAlign(FCanvas.Handle);
-    //LIntOldBKMode := GetBKMode(FCanvas.Handle);
+    {$IFNDEF FPC}
+    LIntOldAlign := GetTextAlign(FCanvas.Handle);
+    LIntOldBKMode := GetBKMode(FCanvas.Handle);
+    {$ELSE}
     OldTextStyle := FCanvas.TextStyle;
     NewTextStyle := FCanvas.TextStyle;
+    {$ENDIF}
     try
-      //SetBKMode(FCanvas.Handle, TRANSPARENT);
+      {$IFNDEF FPC}
+      SetBKMode(FCanvas.Handle, TRANSPARENT);
+      {$ELSE}
       NewTextStyle.Opaque := True;
       FCanvas.TextStyle := NewTextStyle;
+      {$ENDIF}
       LIntRect := Rect(LeftPos, Y, RightPos, Y+FCanvas.TextHeight('Yy'));
       if LStrRight <> '' then
       begin
-        //SetTextAlign(FCanvas.Handle, TA_TOP or TA_RIGHT);
+        {$IFNDEF FPC}
+        SetTextAlign(FCanvas.Handle, TA_TOP or TA_RIGHT);
+        {$ELSE}
         NewTextStyle.Alignment := taRightJustify;
         NewTextStyle.Layout := tlTop;
         FCanvas.TextStyle := NewTextStyle;
+        {$ENDIF}
         ExtTextOut(FCanvas.Handle, RightPos, Y, ETO_CLIPPED,
           @LIntRect, PChar(LStrRight), Length(LStrRight), nil);
       end;
       if LStrCenter <> '' then
       begin
-        //SetTextAlign(FCanvas.Handle, TA_TOP or TA_CENTER);
+        {$IFNDEF FPC}
+        SetTextAlign(FCanvas.Handle, TA_TOP or TA_CENTER);
+        {$ELSE}
         NewTextStyle.Alignment := taCenter;
         NewTextStyle.Layout := tlTop;
         FCanvas.TextStyle := NewTextStyle;
+        {$ENDIF}
         ExtTextOut(FCanvas.Handle, LeftPos + ((RightPos - LeftPos) div 2), Y, ETO_CLIPPED,
           @LIntRect, PChar(LStrCenter), Length(LStrCenter), nil);
       end;
       if LStrLeft <> '' then
       begin
-        //SetTextAlign(FCanvas.Handle, TA_TOP or TA_LEFT);
+        {$IFNDEF FPC}
+        SetTextAlign(FCanvas.Handle, TA_TOP or TA_LEFT);
+        {$ELSE}
         NewTextStyle.Alignment := taLeftJustify;
         NewTextStyle.Layout := tlTop;
         FCanvas.TextStyle := NewTextStyle;
+        {$ENDIF}
         ExtTextOut(FCanvas.Handle, LeftPos, Y, ETO_CLIPPED,
           @LIntRect, PChar(LStrLeft), Length(LStrLeft), nil);
       end;
     finally
-      //SetTextAlign(FCanvas.Handle, LIntOldAlign);
-      //SetBKMode(FCanvas.Handle, LIntOldBKMode);
+      {$IFNDEF FPC}
+      SetTextAlign(FCanvas.Handle, LIntOldAlign);
+      SetBKMode(FCanvas.Handle, LIntOldBKMode);
+      {$ELSE}
       FCanvas.TextStyle := OldTextStyle;
+      {$ENDIF}
     end;
   end;
 var
@@ -3842,7 +3972,23 @@ begin
   if (not Assigned(FEditor)) or (FEditor.DataSize < 1) then
     Exit;
 
+  {$IFNDEF FPC}
+  {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+    {$IFOPT R+}
+      {$DEFINE RANGECHECK_REENABLE}
+      {$RANGECHECKS OFF} // {$R-}
+    {$ENDIF}
+  {$IFEND CompilerVersion <= 20} 
+  {$ENDIF}
   LIntMinWidth := Length(FEditor.GetOffsetString(FEditor.DataSize));
+  {$IFNDEF FPC}
+  {$IF CompilerVersion <= 20} // RangeCheck might cause Internal-Error C1118
+    {$IFDEF RANGECHECK_REENABLE}
+      {$RANGECHECKS ON} // {$R+}
+      {$UNDEF RANGECHECK_REENABLE}
+    {$ENDIF}
+  {$IFEND CompilerVersion <= 20} 
+  {$ENDIF}
 
   if (not JustCalc) and (FLinesPerPage < 1) then
     Exit;
@@ -3879,7 +4025,7 @@ begin
     Exit;
 
   Result := 0;
-// länge einer zeile berechnen
+// lÃ¤nge einer zeile berechnen
   LRecTextAttr := GetOneLine(LIntDataStart, LIntDataEnd, LIntMinWidth);
   LfntTemp := TFont.Create;
   LfntTemp.Assign(FCanvas.Font);
@@ -3981,7 +4127,7 @@ begin
           if (not (pfUseBackgroundColor in FFlags)) or (pfMonochrome in
             FFlags) then
             LRectOut.Bottom := LIntY + (LIntHeight * 3 div 2);
-          ExtTextOut(FCanvas.Handle, LIntLeft, LIntY, ETO_CLIPPED or
+          {$IFDEF FPC}ExtTextOut{$ELSE}ExtTextOutW{$ENDIF}(FCanvas.Handle, LIntLeft, LIntY, ETO_CLIPPED or
             ETO_OPAQUE, @LRectOut, @LRecTextAttr.Text[LIntLoop],
             1, nil);
           if (not (pfUseBackgroundColor in FFlags)) or (pfMonochrome in
@@ -4058,10 +4204,10 @@ begin
             LIntY + LIntHeight);
           LIntOldFontSize := FCanvas.Font.Size;
           if FEditor.UnicodeChars then
-            while (FCanvas.Font.Size > 1) and GetTextExtentPoint32(FCanvas.Handle, @LRecTextAttr.Text[LIntLoop],
+            while (FCanvas.Font.Size > 1) and {$IFDEF FPC}GetTextExtentPoint32{$ELSE}GetTextExtentPoint32W{$ENDIF}(FCanvas.Handle, @LRecTextAttr.Text[LIntLoop],
             1, LrecSize) and (LRecSize.cx > (LRectOut.Right - LRectOut.Left)) do
             FCanvas.Font.Size := FCanvas.Font.Size -1;
-          ExtTextOut(FCanvas.Handle, LIntLeft, LIntY, ETO_CLIPPED or
+          {$IFDEF FPC}ExtTextOut{$ELSE}ExtTextOutW{$ENDIF}(FCanvas.Handle, LIntLeft, LIntY, ETO_CLIPPED or
             ETO_OPAQUE, @LRectOut, @LRecTextAttr.Text[LIntLoop],
             1, nil);
           if FEditor.UnicodeChars then
@@ -4240,4 +4386,3 @@ finalization
 {$ENDIF}
 
 end.
-
